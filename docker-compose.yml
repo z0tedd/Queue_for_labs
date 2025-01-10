@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go_app
+    #    ports:
+    # - "8080:8080" # Измените порт, если ваше приложение использует другой
+    #volumes:
+    # - ./queues.db:/app/queues.db
+    environment:
+      - API_KEY=pidorebanye
+# - DB_PATH=/app/queues.db
+#depends_on:
+# - db
+#volumes:
+# db_data:
+
+#networks:
+# app_network:

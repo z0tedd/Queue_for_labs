@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -18,7 +19,7 @@ var (
 )
 
 func main() {
-	botToken := "ya-pidoras"
+	botToken := os.Getenv("API_KEY")
 	if botToken == "" {
 		log.Fatalf("Токен не найден!")
 	}
