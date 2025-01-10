@@ -315,6 +315,15 @@ func showQueues(bot *tgbotapi.BotAPI, chatID int64) {
 
 func handleQueueActionSelection(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	queueName := message.Text
+	if queueName == "Назад в главное меню" {
+
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Возвращаю в главное меню")
+		msg.ReplyMarkup = mainMenu()
+		bot.Send(msg)
+		delete(userStates, message.Chat.ID)
+		delete(queueActions, message.Chat.ID)
+		return
+	}
 	var queueID int
 
 	err := db.QueryRow("SELECT id FROM queues WHERE name = ?", queueName).Scan(&queueID)
