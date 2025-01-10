@@ -18,7 +18,7 @@ var (
 )
 
 func main() {
-	botToken := "ya_pidoras!"
+	botToken := "ya-pidoras"
 	if botToken == "" {
 		log.Fatalf("Токен не найден!")
 	}
@@ -102,6 +102,7 @@ func deleteUserFromQueue(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	queueID, exists := selectedQueueID[chatID]
 	if !exists {
 		msg := tgbotapi.NewMessage(chatID, "Ошибка: очередь не выбрана.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -110,6 +111,7 @@ func deleteUserFromQueue(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	res, err := db.Exec("DELETE FROM queue_entries WHERE queue_id = ? AND username = ?", queueID, username)
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, "Ошибка при удалении пользователя.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -117,9 +119,11 @@ func deleteUserFromQueue(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
 		msg := tgbotapi.NewMessage(chatID, "Пользователь не найден в этой очереди.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 	} else {
 		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Пользователь \"%s\" успешно удалён из очереди.", username))
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 	}
 
@@ -132,6 +136,7 @@ func handleAdminActions(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	queueID, exists := selectedQueueID[chatID]
 	if !exists {
 		msg := tgbotapi.NewMessage(chatID, "Ошибка: очередь не выбрана.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -155,7 +160,9 @@ func handleAdminActions(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	case "Назад в главное меню":
 		delete(userStates, chatID)
 		delete(selectedQueueID, chatID)
-		showMainMenu(bot, message)
+		msg := tgbotapi.NewMessage(chatID, "Возвращаю в главное меню:")
+		msg.ReplyMarkup = mainMenu()
+		bot.Send(msg)
 	default:
 		msg := tgbotapi.NewMessage(chatID, "Неверная команда. Используйте меню.")
 		bot.Send(msg)
@@ -171,6 +178,7 @@ func clearQueue(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 	}
 
 	msg := tgbotapi.NewMessage(chatID, "Очередь успешно очищена.")
+	msg.ReplyMarkup = mainMenu()
 	bot.Send(msg)
 }
 
@@ -179,6 +187,7 @@ func deleteQueue(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 	_, err := db.Exec("DELETE FROM queues WHERE id = ?", queueID)
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, "Ошибка при удалении очереди.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -186,6 +195,7 @@ func deleteQueue(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 	_, err = db.Exec("DELETE FROM queue_entries WHERE queue_id = ?", queueID)
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, "Ошибка при удалении записей из очереди.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -193,6 +203,7 @@ func deleteQueue(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 	delete(selectedQueueID, chatID) // Удаляем выбранную очередь из состояния пользователя
 
 	msg := tgbotapi.NewMessage(chatID, "Очередь успешно удалена.")
+	msg.ReplyMarkup = mainMenu()
 	bot.Send(msg)
 }
 
@@ -204,6 +215,7 @@ func handleDeleteUser(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	res, err := db.Exec("DELETE FROM queue_entries WHERE queue_id = ? AND username = ?", queueID, username)
 	if err != nil {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Ошибка при удалении пользователя.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -211,9 +223,11 @@ func handleDeleteUser(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Пользователь не найден в этой очереди.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 	} else {
 		msg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf("Пользователь \"%s\" удален из очереди.", username))
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 	}
 
@@ -260,6 +274,7 @@ func mainMenu() tgbotapi.ReplyKeyboardMarkup {
 		{tgbotapi.NewKeyboardButton("Показать очередь")},
 		{tgbotapi.NewKeyboardButton("Создать очередь")},
 		{tgbotapi.NewKeyboardButton("Изменить очередь (Админ)")},
+		{tgbotapi.NewKeyboardButton("Назад в главное меню")},
 	}
 	return tgbotapi.NewReplyKeyboard(buttons...)
 }
@@ -353,6 +368,7 @@ func addUserToQueue(bot *tgbotapi.BotAPI, chatID int64, queueID int, username st
 		return
 	}
 	msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Вы добавлены в очередь!"))
+	msg.ReplyMarkup = mainMenu()
 	bot.Send(msg)
 }
 
@@ -369,11 +385,12 @@ func showQueueEntries(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 	for rows.Next() {
 		var username string
 		rows.Scan(&username)
-		users = append(users, username)
+		users = append(users, "@"+username)
 	}
 
 	msgText := "Состав очереди:\n" + strings.Join(users, "\n")
 	msg := tgbotapi.NewMessage(chatID, msgText)
+	msg.ReplyMarkup = mainMenu()
 	bot.Send(msg)
 }
 
@@ -642,6 +659,7 @@ func handleQueueCreation(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	}
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf("Очередь \"%s\" успешно создана!", queueName))
+	msg.ReplyMarkup = mainMenu()
 	bot.Send(msg)
 
 	delete(userStates, message.Chat.ID) // Сбрасываем состояние пользователя
