@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -16,6 +17,14 @@ var (
 	userStates      = make(map[int64]string) // userID -> state
 	selectedQueueID = make(map[int64]int)    // userID -> queueID
 	queueActions    = make(map[int64]string) // userID -> action type (для администрирования и просмотра)
+
+	PermitedNames = []string{
+		"Зайти в очередь",
+		"Показать очередь",
+		"Создать очередь",
+		"Изменить очередь (Админ)",
+		"Назад в главное меню",
+	}
 )
 
 func main() {
@@ -275,7 +284,6 @@ func mainMenu() tgbotapi.ReplyKeyboardMarkup {
 		{tgbotapi.NewKeyboardButton("Показать очередь")},
 		{tgbotapi.NewKeyboardButton("Создать очередь")},
 		{tgbotapi.NewKeyboardButton("Изменить очередь (Админ)")},
-		{tgbotapi.NewKeyboardButton("Назад в главное меню")},
 	}
 	return tgbotapi.NewReplyKeyboard(buttons...)
 }
@@ -305,6 +313,8 @@ func showQueues(bot *tgbotapi.BotAPI, chatID int64) {
 	if len(buttons) == 0 {
 		msg := tgbotapi.NewMessage(chatID, "Очередей пока нет.")
 		bot.Send(msg)
+		delete(userStates, chatID)
+		delete(queueActions, chatID)
 		return
 	}
 
@@ -329,6 +339,7 @@ func handleQueueActionSelection(bot *tgbotapi.BotAPI, message *tgbotapi.Message)
 	err := db.QueryRow("SELECT id FROM queues WHERE name = ?", queueName).Scan(&queueID)
 	if err != nil {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Такой очереди не существует. Попробуйте снова.")
+		msg.ReplyMarkup = mainMenu()
 		bot.Send(msg)
 		return
 	}
@@ -660,6 +671,18 @@ func showQueueEntries(bot *tgbotapi.BotAPI, chatID int64, queueID int) {
 func handleQueueCreation(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	queueName := message.Text
 
+	defer func() {
+		delete(userStates, message.Chat.ID) // Сброс состояния
+		delete(queueActions, message.Chat.ID)
+	}()
+
+	if slices.Contains(PermitedNames, queueName) {
+		log.Printf("Ошибка создания очереди: %v", "название совпадает с командами меню.")
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Ошибка при создании очереди.")
+		msg.ReplyMarkup = mainMenu()
+		bot.Send(msg)
+		return
+	}
 	_, err := db.Exec("INSERT INTO queues (name, created_by) VALUES (?, ?)", queueName, message.Chat.ID)
 	if err != nil {
 		log.Printf("Ошибка создания очереди: %v", err)

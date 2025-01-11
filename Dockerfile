@@ -1,5 +1,5 @@
 # Этап 1: Компиляция
-FROM golang:1.23-alpine as build
+FROM golang:1.23-alpine AS build
 
 WORKDIR /app
 
@@ -9,13 +9,12 @@ RUN apk add --no-cache gcc musl-dev
 # Копируем файлы для управления зависимостями
 COPY go.mod go.sum ./
 RUN ls -a /app # Выводим содержимое директории /app
-RUN go env -w CGO_ENABLED=1
 RUN go mod download
 
 # Копируем остальные файлы и собираем приложение
 COPY . .
 RUN ls -a /app # Проверяем, что все файлы скопированы
-RUN go build -o main .
+RUN CGO_ENABLED=1 go build -o main .
 
 # Этап 2: Минимальный образ для запуска
 FROM alpine:latest

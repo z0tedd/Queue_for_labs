@@ -9,7 +9,7 @@ services:
     #volumes:
     # - ./queues.db:/app/queues.db
     environment:
-      - API_KEY=pidorebanye
+      - API_KEY="bara bara beri beri beri"
 # - DB_PATH=/app/queues.db
 #depends_on:
 # - db
